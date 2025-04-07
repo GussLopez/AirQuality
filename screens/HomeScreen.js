@@ -14,7 +14,7 @@ const { width } = Dimensions.get("window")
 
 const AQI_UPDATE_INTERVAL = 600000 
 const DEBOUNCE_DELAY = 1000
-const MAX_DATA_POINTS = 6 // Número máximo de puntos de datos para mostrar
+const MAX_DATA_POINTS = 6
 
 export default function HomeScreen({ language }) {
   const [airQuality, setAirQuality] = useState({
@@ -35,7 +35,6 @@ export default function HomeScreen({ language }) {
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date())
   const [isLoadingSensors, setIsLoadingSensors] = useState(true)
   
-  // Estado para almacenar datos históricos de AQI
   const [aqiHistory, setAqiHistory] = useState([])
   const [chartLabels, setChartLabels] = useState([])
 
@@ -45,28 +44,23 @@ export default function HomeScreen({ language }) {
     const timeLabel = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0')
     
     setAqiHistory(prevHistory => {
-      // Añadir nuevo valor al historial
       const newHistory = [...prevHistory, newAqi]
-      // Mantener solo los últimos MAX_DATA_POINTS valores
       return newHistory.slice(-MAX_DATA_POINTS)
     })
     
     setChartLabels(prevLabels => {
       // Añadir nueva etiqueta de tiempo
       const newLabels = [...prevLabels, timeLabel]
-      // Mantener solo las últimas MAX_DATA_POINTS etiquetas
       return newLabels.slice(-MAX_DATA_POINTS)
     })
   }
 
-  // Suscribirse a los datos de sensores en tiempo real
   useEffect(() => {
     const unsubscribe = subscribeSensorData((data) => {
       setSensorData(data)
       setIsLoadingSensors(false)
       setLastUpdateTime(new Date())
       
-      // Actualizar AQI basado en mq135_ppm (simplificado)
       if (data.mq135_ppm) {
         const calculatedAqi = Math.min(500, Math.floor(data.mq135_ppm * 1.5))
         setAirQuality(prev => ({ 
@@ -80,14 +74,11 @@ export default function HomeScreen({ language }) {
           }
         }))
         
-        // Actualizar historial de AQI
         updateAqiHistory(calculatedAqi)
       }
     })
 
-    // Inicializar con algunos datos de ejemplo si no hay datos
     if (aqiHistory.length === 0) {
-      // Crear etiquetas de tiempo para las últimas horas
       const now = new Date()
       const initialLabels = []
       const initialData = []
@@ -98,9 +89,8 @@ export default function HomeScreen({ language }) {
         const timeLabel = time.getHours() + ":" + time.getMinutes().toString().padStart(2, '0')
         initialLabels.push(timeLabel)
         
-        // Datos de ejemplo que varían alrededor del valor actual
         const baseValue = 75 // Valor base
-        const randomOffset = Math.floor(Math.random() * 20) - 10 // Variación aleatoria entre -10 y +10
+        const randomOffset = Math.floor(Math.random() * 20) - 10
         initialData.push(baseValue + randomOffset)
       }
       
@@ -130,7 +120,6 @@ export default function HomeScreen({ language }) {
     return () => clearTimeout(debounceTimer)
   }, [sensorData.mq135_ppm])
 
-  // Formatear el tiempo restante para la próxima actualización
   const getTimeUntilNextUpdate = () => {
     const now = new Date()
     const timeSinceLastUpdate = now - lastUpdateTime
@@ -142,7 +131,6 @@ export default function HomeScreen({ language }) {
 
   const [timeRemaining, setTimeRemaining] = useState(getTimeUntilNextUpdate())
 
-  // Actualizar el contador cada segundo
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeRemaining(getTimeUntilNextUpdate())
@@ -151,7 +139,6 @@ export default function HomeScreen({ language }) {
     return () => clearInterval(timer)
   }, [lastUpdateTime])
 
-  // Preparar datos para la gráfica
   const chartData = {
     labels: chartLabels,
     datasets: [
@@ -176,7 +163,6 @@ export default function HomeScreen({ language }) {
         <AirQualityGauge value={airQuality.aqi} />
       </View>
 
-      {/* Panel de datos de sensores */}
       <View style={tw`bg-gray-800 p-6 rounded-2xl shadow-lg mb-4`}>
         <Text style={tw`text-lg font-bold text-white mb-3`}>{getTranslation(language, "Sensores") || "Datos de Sensores"}</Text>
         {isLoadingSensors ? (
